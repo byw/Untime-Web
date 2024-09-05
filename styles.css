@@ -9,6 +9,7 @@ body {
     background-color: #000;
     overflow: hidden; /* Prevents scrolling */
     cursor: pointer; /* Indicate that the user can click anywhere */
+    overflow: hidden; /* Prevents any scrolling */
 }
 
 .settings-container {

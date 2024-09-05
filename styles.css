@@ -1,0 +1,125 @@
+/* Ensure the body fills the entire screen */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #000;
+    overflow: hidden; /* Prevents scrolling */
+    cursor: pointer; /* Indicate that the user can click anywhere */
+}
+
+.settings-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+    padding: 20px;
+    border-radius: 10px;
+    gap: 10px; /* Adds consistent spacing between all child elements */
+}
+
+.time-inputs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.time-inputs label {
+    color: white;
+    margin-right: 5px;
+}
+
+.settings-container input {
+    padding: 10px;
+    font-size: 16px;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    width: 60px;
+    text-align: center;
+}
+
+.settings-container button {
+    padding: 10px;
+    font-size: 16px;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    width: 60px;
+}
+
+.timer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Center both horizontally and vertically */
+}
+
+.timer-display {
+    display: grid;
+    justify-content: center; /* Center horizontally */
+    align-content: center; /* Center vertically */
+    gap: 3px; /* Gap between the dots */
+}
+
+.pixel {
+    width: 6px;  /* Increased size by 50% (4px * 1.5 = 6px) */
+    height: 6px; /* Increased size by 50% */
+    background-color: #333;
+    border-radius: 50%; /* Makes each pixel a circle */
+}
+
+.pixel.active {
+    background-color: #0f0;
+}
+
+.time-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 24px;
+    background-color: #000;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.reset-button {
+    padding: 10px;
+    margin-top: 10px;
+    font-size: 16px;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+@media (min-width: 768px) {
+    .settings-container {
+        flex-direction: row;
+        gap: 20px; /* Consistent spacing between elements when in row layout */
+    }
+
+    .settings-container input,
+    .settings-container button {
+        margin: 0;
+    }
+}

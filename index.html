@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Untime Web App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Time settings container -->
+    <div class="settings-container" id="settingsContainer">
+        <div class="time-inputs">
+            <label for="hoursInput">Hours:</label>
+            <input type="number" id="hoursInput" placeholder="0" min="0" value="0">
+            
+            <label for="minutesInput">Minutes:</label>
+            <input type="number" id="minutesInput" placeholder="0" min="0" value="0">
+            
+            <label for="secondsInput">Seconds:</label>
+            <input type="number" id="secondsInput" placeholder="0" min="0" value="0">
+        </div>
+        <button onclick="startTimer()">Start</button>
+    </div>
+
+    <!-- Timer display container -->
+    <div class="timer-container" id="timerContainer" style="display: none;">
+        <div class="timer-display" id="timerDisplay">
+            <!-- Pixel blocks will be dynamically created here -->
+        </div>
+    </div>
+
+    <!-- Remaining time display -->
+    <div class="time-display" id="timeDisplay" style="display: none;">
+        <div id="remainingTime">00:00:00</div>
+        <button onclick="resetTimer()" id="resetButton">Reset</button>
+    </div>
+
+    <script src="scripts.js"></script>
+</body>
+</html>

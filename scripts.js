@@ -6,8 +6,9 @@ let intervalTime; // Time interval between pixel updates
 let startTime; // Start time of the timer
 let nextActivationTime; // Time when the next pixel should activate
 let activeDots = new Set(); // Set to store active dots
-let displayRemaining = true; // Flag to toggle display
+let displayRemaining = true; // Set to true to ensure the number timer displays by default
 let resizeTimeout; // Timeout for debouncing the resize event
+let glowInterval; // Interval for glowing pixels
 
 // Function to initialize the timer display
 function initializeTimer() {
@@ -33,7 +34,7 @@ function initializeTimer() {
         const pixel = document.createElement('div');
         pixel.classList.add('pixel');
 
-        // If this pixel was active before, keep it green
+        // If this pixel was active before, keep it active
         if (activeDots.has(i)) {
             pixel.classList.add('active');
         }
@@ -76,8 +77,12 @@ function startTimer() {
         return;
     }
 
-    // Reset display flags for new timer
-    displayRemaining = true;
+    // Hide the title and GitHub button when the timer starts
+    document.getElementById('appTitle').style.display = 'none';
+    document.getElementById('githubFooter').style.display = 'none';
+
+    // Set display flags and show elements
+    displayRemaining = true; // Ensure the number timer is displayed by default
     document.getElementById('timeDisplay').style.display = 'flex'; 
     document.getElementById('resetButton').style.display = 'block';
 
@@ -143,11 +148,16 @@ function updateRemainingTime() {
 // Function to reset the timer
 function resetTimer() {
     cancelAnimationFrame(timerTimeout); // Cancel any ongoing animation frames
+    clearInterval(glowInterval); // Stop glowing when reset
     activePixels = 0;
     activeDots.clear(); // Clear the active dots
 
-    // Reset display flags to their initial state
-    displayRemaining = false;
+    // Show the title and GitHub button again when resetting
+    document.getElementById('appTitle').style.display = 'block';
+    document.getElementById('githubFooter').style.display = 'block';
+
+    // Set display flags correctly
+    displayRemaining = true; // Ensure the number timer will be displayed after reset
 
     // Show settings and hide timer display
     document.getElementById('settingsContainer').style.display = 'flex';
@@ -158,10 +168,73 @@ function resetTimer() {
     initializeTimer();
 }
 
-// Function to play an alarm sound
+// Function to play an alarm sound and trigger glowing pixels
 function playAlarm() {
     const audio = new Audio('alarm.mp3');
     audio.play();
+    glowRandomPixels(); // Start glowing random pixels
+}
+
+// Function to glow and fade of the pixels
+// Function to gradually increase the percentage of glowing pixels from 10% to 50%
+// Function to gradually increase the percentage of glowing pixels from 10% to 50% and maintain it
+function glowRandomPixels() {
+    const pixels = document.getElementsByClassName('pixel');
+    const totalPixels = pixels.length;
+    let glowPercentage = 0.1; // Start with 10%
+    const maxGlowPercentage = 0.5; // Maximum of 50%
+    const duration = 10000; // 10 seconds to reach 50%
+    const steps = 10; // Number of steps to reach the maximum
+    const stepDuration = duration / steps; // Duration for each step
+
+    // Interval to gradually increase the percentage
+    glowInterval = setInterval(() => {
+        // Calculate the current number of pixels to glow
+        const glowCount = Math.floor(totalPixels * glowPercentage);
+
+        // Randomly select pixels to glow
+        const randomIndices = new Set();
+        while (randomIndices.size < glowCount) {
+            randomIndices.add(Math.floor(Math.random() * totalPixels));
+        }
+
+        // Glow selected pixels with random delays
+        randomIndices.forEach(index => {
+            const pixel = pixels[index];
+            const randomColor = getRandomColor();
+
+            // Set a random delay for each pixel to start glowing
+            setTimeout(() => {
+                pixel.style.transition = 'background-color 1s ease-in-out'; // Smooth transition for 1 second
+                pixel.style.backgroundColor = randomColor; // Set random color
+
+                // Fade out after 1 second
+                setTimeout(() => {
+                    pixel.style.transition = 'background-color 1s ease-in-out';
+                    pixel.style.backgroundColor = ''; // Fade out to default color
+                }, 1000);
+            }, Math.random() * 1000); // Random delay between 0 and 1 second
+        });
+
+        // Increase the percentage gradually
+        if (glowPercentage < maxGlowPercentage) {
+            glowPercentage += (maxGlowPercentage - 0.1) / steps; // Increment percentage to reach 50% over 10 seconds
+        } else {
+            glowPercentage = maxGlowPercentage; // Maintain 50% glowing indefinitely
+        }
+    }, stepDuration); // Repeat every step duration
+}
+
+
+
+// Function to generate a random color
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
 }
 
 // Initialize the timer display on page load

@@ -13,26 +13,25 @@ body {
 
 .settings-container {
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Make the layout vertical */
     align-items: center;
     justify-content: center;
     background-color: #000;
     padding: 20px;
     border-radius: 10px;
-    gap: 10px; /* Aligns Start button */
 }
 
 .time-inputs {
     display: flex;
-    justify-content: center;
+    flex-direction: column; /* Align inputs vertically */
     align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 10px; /* Add space between input fields */
+    margin-bottom: 20px; /* Space below inputs for Start button */
 }
 
 .time-inputs label {
     color: white;
-    margin-right: 5px;
+    margin-bottom: 5px; /* Space between label and input */
 }
 
 .settings-container input {
@@ -42,8 +41,9 @@ body {
     color: white;
     border: none;
     border-radius: 5px;
-    width: 60px;
+    width: 80px; /* Adjust width for a better look */
     text-align: center;
+    margin-bottom: 10px; /* Space below each input */
 }
 
 .settings-container button {
@@ -53,7 +53,8 @@ body {
     color: white;
     border: none;
     border-radius: 5px;
-    width: 60px;
+    width: 80px; /* Adjust width to align with input fields */
+    margin-top: 10px; /* Space above button */
 }
 
 .timer-container {
@@ -116,8 +117,8 @@ body {
 
 @media (min-width: 768px) {
     .settings-container {
-        flex-direction: row;
-        gap: 20px; /* Consistent spacing between elements when in row layout */
+        flex-direction: column; /* Keep vertical layout on wider screens */
+        align-items: center; /* Center align for larger screens */
     }
 
     .settings-container input,
@@ -125,3 +126,4 @@ body {
         margin: 0;
     }
 }
+

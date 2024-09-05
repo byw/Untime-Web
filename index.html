@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Untime Web</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <!-- Import Roboto Thin font -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Title of the Web App -->
+    <h1 class="app-title" id="appTitle">Untime Web by Zenghiok Ng</h1>
+
     <!-- Time settings container -->
     <div class="settings-container" id="settingsContainer">
         <div class="time-inputs">
@@ -35,6 +40,11 @@
         <div id="remainingTime">00:00:00</div>
         <button onclick="resetTimer()" id="resetButton">Reset</button>
     </div>
+
+    <!-- GitHub Button at the bottom -->
+    <footer id="githubFooter">
+        <a href="https://github.com/wowLookAmazingUsername/Untime-Web" target="_blank" class="github-button" id="githubButton">GitHub</a>
+    </footer>
 
     <script src="scripts.js"></script>
 </body>

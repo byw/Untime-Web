@@ -1,5 +1,5 @@
 {
-  "name": "Untime Web App",
+  "name": "Untime Web",
   "short_name": "Untime",
   "description": "A simple timer web app with a pixel-based countdown.",
   "start_url": "index.html",

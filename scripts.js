@@ -182,7 +182,7 @@ function glowRandomPixels() {
     const pixels = document.getElementsByClassName('pixel');
     const totalPixels = pixels.length;
     let glowPercentage = 0.1; // Start with 10%
-    const maxGlowPercentage = 0.5; // Maximum of 50%
+    const maxGlowPercentage = 0.3; // Maximum of 50%
     const duration = 10000; // 10 seconds to reach 50%
     const steps = 10; // Number of steps to reach the maximum
     const stepDuration = duration / steps; // Duration for each step

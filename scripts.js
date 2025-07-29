@@ -108,8 +108,7 @@ function startTimer() {
     startTime = performance.now();
     nextActivationTime = startTime + intervalTime;
 
-    // Request wake lock to prevent screen from turning off
-    requestWakeLock();
+    // Wake lock is already active from page load
 
     // Start the timer with immediate pixel update
     updatePixel();
@@ -141,7 +140,7 @@ function updatePixel() {
         timerTimeout = requestAnimationFrame(updatePixel); // Use requestAnimationFrame for the next update
     } else {
         playAlarm();
-        releaseWakeLock();
+        // Keep wake lock active even after alarm
     }
 }
 
@@ -180,8 +179,7 @@ function resetTimer() {
     isPaused = false;
     totalPausedDuration = 0;
 
-    // Release wake lock when resetting
-    releaseWakeLock();
+    // Keep wake lock active, only release when page is closed
 
     // Show the title and GitHub button again when resetting
     document.getElementById('appTitle').style.display = 'block';
@@ -204,7 +202,7 @@ function playAlarm() {
     const audio = new Audio('alarm.mp3');
     audio.play();
     glowRandomPixels(); // Start glowing random pixels
-    releaseWakeLock(); // Release wake lock when alarm plays
+    // Keep wake lock active even after alarm
 }
 
 // Function to glow and fade of the pixels
@@ -270,7 +268,10 @@ function getRandomColor() {
 }
 
 // Initialize the timer display on page load
-window.onload = initializeTimer;
+window.onload = () => {
+    initializeTimer();
+    requestWakeLock(); // Request wake lock when page loads
+};
 window.addEventListener('resize', debounceResize); // Use debounced resize event
 
 // Function to pause/unpause timer
@@ -280,7 +281,7 @@ function pauseTimer() {
         isPaused = false;
         const currentTime = performance.now();
         totalPausedDuration += currentTime - pausedTime;
-        requestWakeLock();
+        // Wake lock remains active
         // Hide reset button and time display when resuming
         document.getElementById('resetButton').style.display = 'none';
         document.getElementById('timeDisplay').style.display = 'none';
@@ -289,7 +290,7 @@ function pauseTimer() {
         // Pause timer
         isPaused = true;
         pausedTime = performance.now();
-        releaseWakeLock();
+        // Keep wake lock active even when paused
     }
 }
 
@@ -322,7 +323,7 @@ function releaseWakeLock() {
 }
 
 // Event listeners for timer interactions
-document.body.addEventListener('mousedown', (e) => {
+document.body.addEventListener('mousedown', () => {
     if (document.getElementById('timerContainer').style.display === 'flex') {
         isLongPress = false;
         longPressTimer = setTimeout(() => {
@@ -332,7 +333,7 @@ document.body.addEventListener('mousedown', (e) => {
     }
 });
 
-document.body.addEventListener('mouseup', (e) => {
+document.body.addEventListener('mouseup', () => {
     if (document.getElementById('timerContainer').style.display === 'flex') {
         clearTimeout(longPressTimer);
         if (!isLongPress) {

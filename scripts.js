@@ -16,6 +16,39 @@ let wakeLock = null; // Screen wake lock
 let longPressTimer; // Timer for long press detection
 let isLongPress = false; // Flag to track if long press occurred
 
+// Timer persistence functions
+function saveTimerState() {
+    const timerState = {
+        isActive: document.getElementById('timerContainer').style.display === 'flex',
+        durationInSeconds: durationInSeconds,
+        startTime: startTime,
+        isPaused: isPaused,
+        pausedTime: pausedTime,
+        totalPausedDuration: totalPausedDuration,
+        activePixels: activePixels,
+        activeDots: Array.from(activeDots),
+        displayRemaining: displayRemaining,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('timerState', JSON.stringify(timerState));
+}
+
+function loadTimerState() {
+    const saved = localStorage.getItem('timerState');
+    if (!saved) return null;
+    
+    try {
+        return JSON.parse(saved);
+    } catch (e) {
+        localStorage.removeItem('timerState');
+        return null;
+    }
+}
+
+function clearTimerState() {
+    localStorage.removeItem('timerState');
+}
+
 // Function to initialize the timer display
 function initializeTimer() {
     const timerDisplay = document.getElementById('timerDisplay');
@@ -113,6 +146,9 @@ function startTimer() {
     // Start the timer with immediate pixel update
     updatePixel();
     updateRemainingTime(); // Start updating the remaining time
+    
+    // Save initial timer state
+    saveTimerState();
 }
 
 // Function to update each pixel
@@ -195,6 +231,9 @@ function resetTimer() {
     document.getElementById('resetButton').style.display = 'none'; // Hide reset button
 
     initializeTimer();
+    
+    // Clear saved state when resetting
+    clearTimerState();
 }
 
 // Function to play an alarm sound and trigger glowing pixels
@@ -203,6 +242,8 @@ function playAlarm() {
     audio.play();
     glowRandomPixels(); // Start glowing random pixels
     // Keep wake lock active even after alarm
+    // Clear saved state when alarm plays
+    clearTimerState();
 }
 
 // Function to glow and fade of the pixels
@@ -267,12 +308,99 @@ function getRandomColor() {
     return color;
 }
 
+// Function to restore timer from saved state
+function restoreTimerState() {
+    const saved = loadTimerState();
+    if (!saved || !saved.isActive) return false;
+    
+    // Calculate how much time passed while away
+    const timeAway = Date.now() - saved.timestamp;
+    
+    // Restore timer variables
+    durationInSeconds = saved.durationInSeconds;
+    startTime = saved.startTime;
+    isPaused = saved.isPaused;
+    pausedTime = saved.pausedTime;
+    totalPausedDuration = saved.totalPausedDuration;
+    activePixels = saved.activePixels;
+    activeDots = new Set(saved.activeDots);
+    displayRemaining = saved.displayRemaining;
+    
+    // If timer was paused, add time away to total paused duration
+    if (isPaused) {
+        totalPausedDuration += timeAway;
+        pausedTime = performance.now(); // Reset pause time to now
+    }
+    
+    // Check if timer should have completed while away
+    const currentTime = performance.now();
+    const totalElapsed = (currentTime - startTime - totalPausedDuration) / 1000;
+    
+    if (totalElapsed >= durationInSeconds) {
+        // Timer expired while away
+        playAlarm();
+        clearTimerState();
+        return false;
+    }
+    
+    // Hide settings and show timer
+    document.getElementById('appTitle').style.display = 'none';
+    document.getElementById('githubFooter').style.display = 'none';
+    document.getElementById('settingsContainer').style.display = 'none';
+    document.getElementById('timerContainer').style.display = 'flex';
+    
+    // Restore display state
+    if (displayRemaining) {
+        document.getElementById('timeDisplay').style.display = 'flex';
+    } else {
+        document.getElementById('timeDisplay').style.display = 'none';
+    }
+    
+    // Initialize timer display with restored pixels
+    initializeTimer();
+    
+    // Resume timer if it wasn't paused
+    if (!isPaused) {
+        updatePixel();
+        updateRemainingTime();
+    } else {
+        // Just update the remaining time display once for paused state
+        updateRemainingTime();
+    }
+    
+    return true;
+}
+
 // Initialize the timer display on page load
 window.onload = () => {
-    initializeTimer();
+    // Try to restore saved timer state first
+    if (!restoreTimerState()) {
+        // If no saved state, initialize normally
+        initializeTimer();
+    }
     requestWakeLock(); // Request wake lock when page loads
 };
 window.addEventListener('resize', debounceResize); // Use debounced resize event
+
+// Handle page visibility changes
+document.addEventListener('visibilitychange', () => {
+    const timerContainer = document.getElementById('timerContainer');
+    if (timerContainer.style.display === 'flex') {
+        if (document.hidden) {
+            // Page is being hidden, save current state
+            saveTimerState();
+        } else {
+            // Page is becoming visible, update state if timer was running
+            const saved = loadTimerState();
+            if (saved && saved.isActive && !saved.isPaused) {
+                // Timer was running when we left, update paused duration for time away
+                const timeAway = Date.now() - saved.timestamp;
+                totalPausedDuration += timeAway;
+                saveTimerState();
+            }
+        }
+    }
+});
 
 // Function to pause/unpause timer
 function pauseTimer() {
@@ -286,11 +414,13 @@ function pauseTimer() {
         document.getElementById('resetButton').style.display = 'none';
         document.getElementById('timeDisplay').style.display = 'none';
         displayRemaining = false;
+        saveTimerState(); // Save resume state
     } else {
         // Pause timer
         isPaused = true;
         pausedTime = performance.now();
         // Keep wake lock active even when paused
+        saveTimerState(); // Save pause state
     }
 }
 

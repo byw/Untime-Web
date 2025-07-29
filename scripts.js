@@ -9,6 +9,12 @@ let activeDots = new Set(); // Set to store active dots
 let displayRemaining = true; // Set to true to ensure the number timer displays by default
 let resizeTimeout; // Timeout for debouncing the resize event
 let glowInterval; // Interval for glowing pixels
+let isPaused = false; // Timer pause state
+let pausedTime = 0; // Time when timer was paused
+let totalPausedDuration = 0; // Total duration the timer has been paused
+let wakeLock = null; // Screen wake lock
+let longPressTimer; // Timer for long press detection
+let isLongPress = false; // Flag to track if long press occurred
 
 // Function to initialize the timer display
 function initializeTimer() {
@@ -62,6 +68,8 @@ function debounceResize() {
 function startTimer() {
     cancelAnimationFrame(timerTimeout); // Cancel any ongoing animation frames to avoid conflicts
     activePixels = 0; // Reset pixel counter
+    isPaused = false;
+    totalPausedDuration = 0;
 
     // Get the user-defined duration from the input fields
     const hours = parseInt(document.getElementById('hoursInput').value) || 0;
@@ -82,9 +90,9 @@ function startTimer() {
     document.getElementById('githubFooter').style.display = 'none';
 
     // Set display flags and show elements
-    displayRemaining = true; // Ensure the number timer is displayed by default
-    document.getElementById('timeDisplay').style.display = 'flex'; 
-    document.getElementById('resetButton').style.display = 'block';
+    displayRemaining = false; // Hide the number timer by default
+    document.getElementById('timeDisplay').style.display = 'none'; 
+    document.getElementById('resetButton').style.display = 'none'; // Hide reset button initially
 
     // Hide settings and show timer display
     document.getElementById('settingsContainer').style.display = 'none';
@@ -100,6 +108,9 @@ function startTimer() {
     startTime = performance.now();
     nextActivationTime = startTime + intervalTime;
 
+    // Request wake lock to prevent screen from turning off
+    requestWakeLock();
+
     // Start the timer with immediate pixel update
     updatePixel();
     updateRemainingTime(); // Start updating the remaining time
@@ -107,10 +118,15 @@ function startTimer() {
 
 // Function to update each pixel
 function updatePixel() {
+    if (isPaused) {
+        timerTimeout = requestAnimationFrame(updatePixel);
+        return;
+    }
+
     const currentTime = performance.now();
 
     // Calculate how many pixels should be activated based on the elapsed time
-    const elapsedTime = (currentTime - startTime) / 1000; // Elapsed time in seconds
+    const elapsedTime = (currentTime - startTime - totalPausedDuration) / 1000; // Elapsed time in seconds
     const pixelsToActivate = Math.floor((elapsedTime / (durationInSeconds - 0.5)) * totalPixels); // Adjusted duration for the extra second
 
     // Activate the pixels up to the calculated number
@@ -125,13 +141,23 @@ function updatePixel() {
         timerTimeout = requestAnimationFrame(updatePixel); // Use requestAnimationFrame for the next update
     } else {
         playAlarm();
+        releaseWakeLock();
     }
 }
 
 // Function to update the remaining time continuously
 function updateRemainingTime() {
     const currentTime = performance.now();
-    const elapsedTime = (currentTime - startTime) / 1000; // Convert to seconds
+    let elapsedTime;
+    
+    if (isPaused) {
+        // When paused, use the elapsed time up to the pause point
+        elapsedTime = (pausedTime - startTime - totalPausedDuration) / 1000;
+    } else {
+        // When running, use current time minus paused duration
+        elapsedTime = (currentTime - startTime - totalPausedDuration) / 1000;
+    }
+    
     const remainingTimeInSeconds = Math.max(durationInSeconds - elapsedTime, 0); // Calculate remaining time
 
     const hours = Math.floor(remainingTimeInSeconds / 3600).toString().padStart(2, '0');
@@ -151,6 +177,11 @@ function resetTimer() {
     clearInterval(glowInterval); // Stop glowing when reset
     activePixels = 0;
     activeDots.clear(); // Clear the active dots
+    isPaused = false;
+    totalPausedDuration = 0;
+
+    // Release wake lock when resetting
+    releaseWakeLock();
 
     // Show the title and GitHub button again when resetting
     document.getElementById('appTitle').style.display = 'block';
@@ -173,6 +204,7 @@ function playAlarm() {
     const audio = new Audio('alarm.mp3');
     audio.play();
     glowRandomPixels(); // Start glowing random pixels
+    releaseWakeLock(); // Release wake lock when alarm plays
 }
 
 // Function to glow and fade of the pixels
@@ -241,10 +273,102 @@ function getRandomColor() {
 window.onload = initializeTimer;
 window.addEventListener('resize', debounceResize); // Use debounced resize event
 
-// Event listener to toggle display on click
-document.body.addEventListener('click', () => {
+// Function to pause/unpause timer
+function pauseTimer() {
+    if (isPaused) {
+        // Resume timer
+        isPaused = false;
+        const currentTime = performance.now();
+        totalPausedDuration += currentTime - pausedTime;
+        requestWakeLock();
+        // Hide reset button and time display when resuming
+        document.getElementById('resetButton').style.display = 'none';
+        document.getElementById('timeDisplay').style.display = 'none';
+        displayRemaining = false;
+    } else {
+        // Pause timer
+        isPaused = true;
+        pausedTime = performance.now();
+        releaseWakeLock();
+    }
+}
+
+// Function to show reset screen
+function showResetScreen() {
+    if (!isPaused) {
+        pauseTimer(); // Pause the timer when showing reset screen
+    }
+    document.getElementById('timeDisplay').style.display = 'flex';
+    document.getElementById('resetButton').style.display = 'block';
+    displayRemaining = true;
+}
+
+// Wake lock functions
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+    } catch (err) {
+        console.log('Wake lock failed:', err);
+    }
+}
+
+function releaseWakeLock() {
+    if (wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+    }
+}
+
+// Event listeners for timer interactions
+document.body.addEventListener('mousedown', (e) => {
     if (document.getElementById('timerContainer').style.display === 'flex') {
-        toggleDisplay();
+        isLongPress = false;
+        longPressTimer = setTimeout(() => {
+            isLongPress = true;
+            showResetScreen();
+        }, 800); // 800ms for long press
+    }
+});
+
+document.body.addEventListener('mouseup', (e) => {
+    if (document.getElementById('timerContainer').style.display === 'flex') {
+        clearTimeout(longPressTimer);
+        if (!isLongPress) {
+            // Single tap - pause/unpause or toggle display
+            if (activePixels > 0 && activePixels < totalPixels) {
+                pauseTimer();
+            } else {
+                toggleDisplay();
+            }
+        }
+    }
+});
+
+// Touch events for mobile
+document.body.addEventListener('touchstart', (e) => {
+    if (document.getElementById('timerContainer').style.display === 'flex') {
+        e.preventDefault();
+        isLongPress = false;
+        longPressTimer = setTimeout(() => {
+            isLongPress = true;
+            showResetScreen();
+        }, 800);
+    }
+});
+
+document.body.addEventListener('touchend', (e) => {
+    if (document.getElementById('timerContainer').style.display === 'flex') {
+        e.preventDefault();
+        clearTimeout(longPressTimer);
+        if (!isLongPress) {
+            if (activePixels > 0 && activePixels < totalPixels) {
+                pauseTimer();
+            } else {
+                toggleDisplay();
+            }
+        }
     }
 });
 

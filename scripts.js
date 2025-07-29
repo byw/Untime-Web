@@ -15,6 +15,7 @@ let totalPausedDuration = 0; // Total duration the timer has been paused
 let wakeLock = null; // Screen wake lock
 let longPressTimer; // Timer for long press detection
 let isLongPress = false; // Flag to track if long press occurred
+let periodicSaveInterval; // Interval for periodic state saving
 
 // Timer persistence functions
 function saveTimerState() {
@@ -31,15 +32,23 @@ function saveTimerState() {
         timestamp: Date.now()
     };
     localStorage.setItem('timerState', JSON.stringify(timerState));
+    console.log('Timer state saved:', timerState);
 }
 
 function loadTimerState() {
     const saved = localStorage.getItem('timerState');
-    if (!saved) return null;
+    console.log('Loading timer state:', saved);
+    if (!saved) {
+        console.log('No saved timer state found');
+        return null;
+    }
     
     try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        console.log('Parsed timer state:', parsed);
+        return parsed;
     } catch (e) {
+        console.log('Error parsing timer state:', e);
         localStorage.removeItem('timerState');
         return null;
     }
@@ -47,6 +56,22 @@ function loadTimerState() {
 
 function clearTimerState() {
     localStorage.removeItem('timerState');
+}
+
+// Start periodic state saving for iOS PWA reliability
+function startPeriodicSaving() {
+    clearInterval(periodicSaveInterval);
+    periodicSaveInterval = setInterval(() => {
+        const timerContainer = document.getElementById('timerContainer');
+        if (timerContainer && timerContainer.style.display === 'flex') {
+            saveTimerState();
+        }
+    }, 3000); // Save every 3 seconds
+}
+
+// Stop periodic state saving
+function stopPeriodicSaving() {
+    clearInterval(periodicSaveInterval);
 }
 
 // Function to initialize the timer display
@@ -147,8 +172,9 @@ function startTimer() {
     updatePixel();
     updateRemainingTime(); // Start updating the remaining time
     
-    // Save initial timer state
+    // Save initial timer state and start periodic saving
     saveTimerState();
+    startPeriodicSaving();
 }
 
 // Function to update each pixel
@@ -232,8 +258,9 @@ function resetTimer() {
 
     initializeTimer();
     
-    // Clear saved state when resetting
+    // Clear saved state when resetting and stop periodic saving
     clearTimerState();
+    stopPeriodicSaving();
 }
 
 // Function to play an alarm sound and trigger glowing pixels
@@ -242,8 +269,9 @@ function playAlarm() {
     audio.play();
     glowRandomPixels(); // Start glowing random pixels
     // Keep wake lock active even after alarm
-    // Clear saved state when alarm plays
+    // Clear saved state when alarm plays and stop periodic saving
     clearTimerState();
+    stopPeriodicSaving();
 }
 
 // Function to glow and fade of the pixels
@@ -310,8 +338,13 @@ function getRandomColor() {
 
 // Function to restore timer from saved state
 function restoreTimerState() {
+    console.log('Attempting to restore timer state...');
     const saved = loadTimerState();
-    if (!saved || !saved.isActive) return false;
+    if (!saved || !saved.isActive) {
+        console.log('No active timer state to restore');
+        return false;
+    }
+    console.log('Restoring timer state:', saved);
     
     // Calculate how much time passed while away
     const timeAway = Date.now() - saved.timestamp;
@@ -382,7 +415,7 @@ window.onload = () => {
 };
 window.addEventListener('resize', debounceResize); // Use debounced resize event
 
-// Handle page visibility changes
+// Handle page visibility changes (multiple events for better iOS PWA support)
 document.addEventListener('visibilitychange', () => {
     const timerContainer = document.getElementById('timerContainer');
     if (timerContainer.style.display === 'flex') {
@@ -399,6 +432,31 @@ document.addEventListener('visibilitychange', () => {
                 saveTimerState();
             }
         }
+    }
+});
+
+// Additional events for iOS PWA compatibility
+window.addEventListener('beforeunload', () => {
+    console.log('beforeunload event fired');
+    const timerContainer = document.getElementById('timerContainer');
+    if (timerContainer && timerContainer.style.display === 'flex') {
+        saveTimerState();
+    }
+});
+
+window.addEventListener('pagehide', () => {
+    console.log('pagehide event fired');
+    const timerContainer = document.getElementById('timerContainer');
+    if (timerContainer && timerContainer.style.display === 'flex') {
+        saveTimerState();
+    }
+});
+
+window.addEventListener('blur', () => {
+    console.log('blur event fired');
+    const timerContainer = document.getElementById('timerContainer');
+    if (timerContainer && timerContainer.style.display === 'flex') {
+        saveTimerState();
     }
 });
 

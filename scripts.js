@@ -392,14 +392,13 @@ function restoreTimerState() {
     // Initialize timer display with restored pixels
     initializeTimer();
     
-    // Resume timer if it wasn't paused
-    if (!isPaused) {
-        updatePixel();
-        updateRemainingTime();
-    } else {
-        // Just update the remaining time display once for paused state
-        updateRemainingTime();
-    }
+    // Always start the animation loops, even if paused
+    // The updatePixel function handles the paused state internally
+    updatePixel();
+    updateRemainingTime();
+    
+    // Start periodic saving since timer is active
+    startPeriodicSaving();
     
     return true;
 }
